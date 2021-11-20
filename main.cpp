@@ -15,7 +15,7 @@
 
 bool antialiase_on = TRUE;
 
-double radius = 10;
+double radius = 12;
 double theta = 90, phi = 0;
 double cam[3];
 double center[3] = { 0, 0, 0 };
@@ -464,13 +464,13 @@ void draw()
 	if (b)
 	{
 		glPushMatrix();
-		glTranslatef(0, 2 - ball_speed_y, 8 + ball_speed_z);
-		glutSolidSphere(0.03, 50, 50);
+		glTranslatef(0, 4 - ball_speed_y, ball_speed_z);
+		glutSolidSphere(0.1, 50, 50);
 		glPopMatrix();
 	}
 
 	glPushMatrix();
-	glTranslatef(-2.5, 0, 0);
+	glTranslatef(-1.2, 1, 8);
 	if (batting)
 	{
 		glRotatef(10 + bat_angle_y, 0, 1, 0);
@@ -480,7 +480,8 @@ void draw()
 	{
 		glRotatef(-90, 1, 0, 0);
 	}
-	gluCylinder(qobj, 0.2, 0.2, 3, 16, 4);
+	glColor3f(1, 0, 0);
+	gluCylinder(qobj, 0.12, 0.12, 1.6, 16, 4);
 	glPopMatrix();
 	/*
 	glDisable(GL_LIGHT1);
@@ -570,8 +571,8 @@ void add_menu()
 
 void idle()
 {
-	ball_speed_y += 0.00012;
-	ball_speed_z += 0.0002; 
+	ball_speed_y += 0.0006;
+	ball_speed_z += 0.002; 
 	if (batting)
 	{
 		bat_angle_y += 0.1;
