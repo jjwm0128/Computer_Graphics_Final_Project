@@ -15,7 +15,7 @@
 
 bool antialiase_on = TRUE;
 
-double radius = 12;
+double radius = 13;
 double theta = 90, phi = 0;
 double cam[3];
 double center[3] = { 0, 0, 0 };
@@ -25,11 +25,13 @@ double up[3] = { 0, 1, 0 };
 double ball_speed_y = 0;
 double ball_speed_z = 0;
 bool batting = FALSE;
-double bat_angle_x = 0;
 double bat_angle_y = 0;
 
 int a = 0;
 bool b = FALSE;
+//a랑 b는 임시변수 a가 일정범위면 b를 true로 바꾸고 true면 공이나감
+
+double bat_x = 0;
 
 
 GLUquadricObj* qobj = gluNewQuadric();
@@ -464,13 +466,13 @@ void draw()
 	if (b)
 	{
 		glPushMatrix();
-		glTranslatef(0, 4 - ball_speed_y, ball_speed_z);
+		glTranslatef(0, 4.2 - ball_speed_y, ball_speed_z);
 		glutSolidSphere(0.1, 50, 50);
 		glPopMatrix();
 	}
 
 	glPushMatrix();
-	glTranslatef(-1.2, 1, 8);
+	glTranslatef(-1.2, 0.8, 8);
 	if (batting)
 	{
 		glRotatef(10 + bat_angle_y, 0, 1, 0);
@@ -571,28 +573,38 @@ void add_menu()
 
 void idle()
 {
-	ball_speed_y += 0.0006;
-	ball_speed_z += 0.002; 
-	if (batting)
+	if (b)
 	{
-		bat_angle_y += 0.1;
-		if (bat_angle_y > 140)
+		if (bat_angle_y < 90)
 		{
-			batting = FALSE;
-			bat_angle_y = 0;
+			ball_speed_y += 0.00075;
+			ball_speed_z += 0.002;
+		}
+		if (batting && bat_angle_y < 90)
+		{
+			bat_angle_y += 0.14;
+			bat_x = -0.8 + (0.8 * sin(bat_angle_y));
+			if (bat_angle_y > 140)
+			{
+				batting = FALSE;
+				bat_angle_y = 0;
+			}
 		}
 	}
+	
 	a++;
-	if (a % 10000 <5000)
+	if (a >5000)
 	{
 		b = TRUE;
 	}
+	/*
 	else
 	{
 		b = FALSE;
 		ball_speed_y = 0;
 		ball_speed_z = 0;
 	}
+	*/
 	glutPostRedisplay();
 }
 
