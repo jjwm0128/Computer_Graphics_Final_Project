@@ -24,14 +24,26 @@ double up[3] = { 0, 1, 0 };
 //이제 idle에서 +=하는만큼이 구속이됨
 double ball_speed_y = 0;
 double ball_speed_z = 0;
-bool batting = FALSE;
-double bat_angle_y = 0;
+double ball_pos_x = 0;
+double ball_pos_y = 0;
+double ball_pos_z = 0;
+bool ball_flying = FALSE;
+//공의 타격여부 && 땅에 닿지 않았는지 여부
 
+bool batting = FALSE;
+//배트를 휘둘렀는지
+char hit_time = 0;
+//0이면 못침 1이면 빠르게침 2면 정타 3이면 느리게침
+double bat_angle_y = 0;
+double g = 0.000001;
+
+double y_a_1 = 2;
+double y_a_2 = 2.5;
+double y_a_3 = 2;
 int a = 0;
 bool b = FALSE;
 //a랑 b는 임시변수 a가 일정범위면 b를 true로 바꾸고 true면 공이나감
 
-double bat_x = 0;
 
 
 GLUquadricObj* qobj = gluNewQuadric();
@@ -459,14 +471,27 @@ void draw()
 	cam[1] = radius * cos(theta * PI / 180) + 1.5;
 	cam[2] = radius * sin(theta * PI / 180) * cos(phi * PI / 180);
 
-	gluLookAt(cam[0], cam[1], cam[2], center[0], center[1], center[2], up[0], up[1], up[2]);
-
+	if (hit_time==0)
+	{
+		gluLookAt(cam[0], cam[1], cam[2], center[0], center[1], center[2], up[0], up[1], up[2]);
+	}
+	if (hit_time!=0)
+	{
+		gluLookAt(cam[0]+ball_pos_x, cam[1], cam[2]+ball_pos_z, center[0]+ball_pos_x, center[1], center[2]+ball_pos_z, up[0], up[1], up[2]);
+	}
 	draw_axis();
 	//공 구현 포수(처음 시점)가 처음 radius 즉 0,0,10 공은 0,0,0
-	if (b)
+	if (b&&!ball_flying)
 	{
 		glPushMatrix();
 		glTranslatef(0, 4.2 - ball_speed_y, ball_speed_z);
+		glutSolidSphere(0.1, 50, 50);
+		glPopMatrix();
+	}
+	if (b && ball_flying)
+	{
+		glPushMatrix();
+		glTranslatef(ball_pos_x, ball_pos_y, ball_pos_z);
 		glutSolidSphere(0.1, 50, 50);
 		glPopMatrix();
 	}
@@ -573,38 +598,122 @@ void add_menu()
 
 void idle()
 {
-	if (b)
+	if (b && ! ball_flying)
 	{
-		if (bat_angle_y < 90)
+		ball_speed_y += 0.00075;
+		ball_speed_z += 0.002;
+	}
+	if (batting && bat_angle_y < 150)
+	{
+		bat_angle_y += 0.14;
+		if (bat_angle_y > 140)
 		{
-			ball_speed_y += 0.00075;
-			ball_speed_z += 0.002;
+			batting = FALSE;
 		}
-		if (batting && bat_angle_y < 90)
+	}
+	if (bat_angle_y < 90.03 && bat_angle_y>90.01 || ball_flying)
+		//배트가 중앙에 왔을때
+	{
+		if (!ball_flying)
 		{
-			bat_angle_y += 0.14;
-			bat_x = -0.8 + (0.8 * sin(bat_angle_y));
-			if (bat_angle_y > 140)
+			ball_pos_x = 0;
+			ball_pos_y = 4.2 - ball_speed_y;
+			ball_pos_z = ball_speed_z;
+			printf("%f\n", ball_pos_z);
+		}
+		if (ball_speed_z < 7.77 && ball_speed_z>7.37)
+		{
+			hit_time = 1;
+		}
+		if (ball_speed_z < 8.07 && ball_speed_z>7.77)
+		{
+			hit_time = 2;
+		}
+		if (ball_speed_z < 8.47 && ball_speed_z>8.07)
+		{
+			hit_time = 3;
+		}
+		if(hit_time==1)
+		{
+			ball_flying = TRUE;
+			g = g - 0.000001;
+			y_a_1 = y_a_1 + g;
+			ball_pos_x -= 0.01;
+			ball_pos_y = 2 + y_a_1;
+			ball_pos_z -= 0.01;
+			if (ball_pos_y < 0.01)
 			{
-				batting = FALSE;
-				bat_angle_y = 0;
+				if (a % 10000 < 5000)
+				{
+					int temp = 5000 - a;
+					a += temp;
+				}
+				ball_flying = FALSE;
+				hit_time = 0;
+			}
+		}
+		if (hit_time==2) 
+		{
+			ball_flying = TRUE;
+			g = g - 0.000001;
+			y_a_2 = y_a_2 + g;
+			ball_pos_x = 0;
+			ball_pos_y = 2 + y_a_2;
+			ball_pos_z -= 0.01;
+			if (ball_pos_y < 0.01)
+			{
+				if (a % 10000 < 5000)
+				{
+					int temp = 5000 - a;
+					a += temp;
+				}
+				ball_flying = FALSE;
+				hit_time = 0;
+			}
+		}
+		if (hit_time==3)  
+		{
+			ball_flying = TRUE;
+			g = g - 0.000001;
+			y_a_3 = y_a_3 + g;
+			ball_pos_x += 0.01;
+			ball_pos_y = 2 + y_a_3;
+			ball_pos_z -= 0.01;
+			if (ball_pos_y < 0.01)
+			{
+				if (a % 10000 < 5000)
+				{
+					int temp = 5000 - a;
+					a += temp;
+				}
+				ball_flying = FALSE;
+				hit_time = 0;
 			}
 		}
 	}
-	
-	a++;
-	if (a >5000)
+	if (bat_angle_y > 140)
+	{
+		bat_angle_y = 0;
+	}
+	if (!ball_flying)
+	{
+		a++;
+	}
+	if (a % 10000 < 5000 && a>10000)
 	{
 		b = TRUE;
 	}
-	/*
-	else
+	if(a%10000>=5000)
 	{
 		b = FALSE;
+		g = 0.000001;
+		y_a_1 = 2;
+		y_a_2 = 2.5;
+		y_a_3 = 2;
 		ball_speed_y = 0;
 		ball_speed_z = 0;
+		//printf("%f\n", y_a_2);
 	}
-	*/
 	glutPostRedisplay();
 }
 
