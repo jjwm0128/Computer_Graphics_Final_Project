@@ -20,6 +20,7 @@ double theta = 90, phi = 0;
 double cam[3];
 double center[3] = { 0, 0, 0 };
 double up[3] = { 0, 1, 0 };
+double Baseball_Angle = 0;
 
 //이제 idle에서 +=하는만큼이 구속이됨
 double ball_speed_y = 0;
@@ -45,14 +46,14 @@ bool b = FALSE;
 //a랑 b는 임시변수 a가 일정범위면 b를 true로 바꾸고 true면 공이나감
 
 
-
+GLuint* baseball = new GLuint(1);
 GLUquadricObj* qobj = gluNewQuadric();
 
 // user-defined function
 void init(void);
 void light_default();
 void add_menu();
-//void get_resource(const char* str);
+void get_resource(const char* str);
 void mouse(int, int, int, int);
 void mouseWheel(int, int, int, int);
 void motion(int, int);
@@ -63,11 +64,15 @@ void draw(void);
 void resize(int, int);
 void idle();
 
-/*
-ObjParser *monkey;
-GLuint textureMonkey;
-bool antialiase_on = true;
-*/
+void baseball_TextureMapping();
+void bat_TextureMapping();
+void draw_baseball();
+
+ObjParser *baseball_bat;
+GLuint texture_bat;
+
+//bool antialiase_on = true;
+
 
 int main(int argc, char** argv)
 {
@@ -81,8 +86,7 @@ int main(int argc, char** argv)
 
 	add_menu();
 
-	// 리소스 로드 함수
-	//get_resource("monkey.obj");
+	get_resource("baseball_bat.obj");
 
 	/* Create a single window with a keyboard and display callback */
 	glutMouseFunc(&mouse);
@@ -96,6 +100,8 @@ int main(int argc, char** argv)
 
 	glutIdleFunc(&idle);
 
+	gluQuadricDrawStyle(qobj, GLU_FILL);
+	gluQuadricNormals(qobj, GLU_SMOOTH);
 	/* Run the GLUT event loop */
 	glutMainLoop();
 
@@ -162,11 +168,11 @@ void light_default() {
 /*
 void setTextureMapping() {
 	int imgWidth, imgHeight, channels;
-	uchar* img = readImageData("monkey.bmp", &imgWidth, &imgHeight, &channels);
+	uchar* img = readImageData("bat_uv_map.bmp", &imgWidth, &imgHeight, &channels);
 
 	int texNum = 1;
-	glGenTextures(texNum, &textureMonkey);
-	glBindTexture(GL_TEXTURE_2D, textureMonkey);
+	glGenTextures(texNum, &baseball_bat);
+	glBindTexture(GL_TEXTURE_2D, baseball_bat);
 	glTexImage2D(GL_TEXTURE_2D, 0, 3, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
 
 
@@ -181,7 +187,7 @@ void setTextureMapping() {
 void init()
 {
 	printf("init func called\n");
-	glClearColor(0.f, 0.f, 0.f, 0.f);
+	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 	glClearDepth(1.0f);
 	glEnable(GL_DEPTH_TEST);
 
@@ -196,6 +202,10 @@ void init()
 	glEnable(GL_LINE_SMOOTH);
 
 	/* TEXTURE MAPPING SET */
+	gluQuadricTexture(qobj, GL_TRUE);
+
+	baseball_TextureMapping();
+	bat_TextureMapping();
 
 	glEnable(GL_TEXTURE_2D);
 	//setTextureMapping();
@@ -311,12 +321,12 @@ void draw_obj(ObjParser *objParser)
 	glEnd();
 }
 
-/*
+
 void draw_obj_with_texture(ObjParser *objParser)
 {
 	glDisable(GL_BLEND);
-	// glEnable(GL_TEXTURE_2D);	// texture 색 보존을 위한 enable
-	glBindTexture(GL_TEXTURE_2D, textureMonkey);
+	//glEnable(GL_TEXTURE_2D);	
+	glBindTexture(GL_TEXTURE_2D, texture_bat);
 	glBegin(GL_TRIANGLES);
 	for (unsigned int n = 0; n < objParser->getFaceSize(); n += 3) {
 		glTexCoord2f(objParser->textures[objParser->textureIdx[n] - 1].x,
@@ -350,116 +360,6 @@ void draw_obj_with_texture(ObjParser *objParser)
 	glEnable(GL_BLEND);
 }
 
-void draw_cube_textures()
-{
-	int size = 2;
-	glBindTexture(GL_TEXTURE_2D, textureMonkey);
-	glBegin(GL_QUADS);
-	//Quad 1
-	glNormal3f(1.0f, 0.0f, 0.0f);   //N1
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(size / 2, size / 2, size / 2);   //V2
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(size / 2, -size / 2, size / 2);   //V1
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(size / 2, -size / 2, -size / 2);   //V3
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(size / 2, size / 2, -size / 2);   //V4
-  //Quad 2
-	glNormal3f(0.0f, 0.0f, -1.0f);  //N2
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(size / 2, size / 2, -size / 2);   //V4
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(size / 2, -size / 2, -size / 2);   //V3
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(-size / 2, -size / 2, -size / 2);   //V5
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(-size / 2, size / 2, -size / 2);   //V6
-  //Quad 3
-	glNormal3f(-1.0f, 0.0f, 0.0f);  //N3
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(-size / 2, size / 2, -size / 2);   //V6
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(-size / 2, -size / 2, -size / 2);   //V5
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(-size / 2, -size / 2, size / 2);   //V7
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(-size / 2, size / 2, size / 2);   //V8
-  //Quad 4
-	glNormal3f(0.0f, 0.0f, 1.0f);   //N4
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(-size / 2, size / 2, size / 2);   //V8
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(-size / 2, -size / 2, size / 2);   //V7
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(size / 2, -size / 2, size / 2);   //V1
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(size / 2, size / 2, size / 2);   //V2
-  //Quad 5
-	glNormal3f(0.0f, 1.0f, 0.0f);   //N5
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(-size / 2, size / 2, -size / 2);   //V6
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(-size / 2, size / 2, size / 2);   //V8
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(size / 2, size / 2, size / 2);   //V2
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(size / 2, size / 2, -size / 2);   //V4
-  //Quad 6
-	glNormal3f(1.0f, -1.0f, 0.0f);  //N6
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(-size / 2, -size / 2, size / 2);   //V7
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(-size / 2, -size / 2, -size / 2);   //V5
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(size / 2, -size / 2, -size / 2);   //V3
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(size / 2, -size / 2, size / 2);   //V1
-	glEnd();
-}
-
-void draw_textureCube() {
-	glColor3f(1.0, 1.0, 1.0);	// white로 color를 set해주어야 texture색상이 제대로 적용 됨!
-	//glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			// polygon의 원래 색상은 무시하고 texture로 덮음
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	// polygon의 원래 색상과 texture 색상을 곱하여 덮음, texture가 입혀진 표면에 광원 효과 설정 가능
-//glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-		// texture의 색상으로 덮어 씌운다
-
-	glBindTexture(GL_TEXTURE_2D, textureMonkey);
-	glBegin(GL_QUADS);
-	glNormal3f(-1.0, 0, 0);	// -x axis
-	glTexCoord2f(0, 0); glVertex3f(-1.0, 1.0, -1.0);
-	glTexCoord2f(1, 0); glVertex3f(-1.0, -1.0, -1.0);
-	glTexCoord2f(1, 1); glVertex3f(-1.0, -1.0, 1.0);
-	glTexCoord2f(0, 1); glVertex3f(-1.0, 1.0, 1.0);
-	glEnd();
-
-	glBindTexture(GL_TEXTURE_2D, textureMonkey);
-	glBegin(GL_QUADS);
-	glNormal3f(1.0, 0, 0);	//x axis
-	glTexCoord2f(0, 0); glVertex3f(1.0, 1.0, 1.0);
-	glTexCoord2f(1, 0); glVertex3f(1.0, -1.0, 1.0);
-	glTexCoord2f(1, 1); glVertex3f(1.0, -1.0, -1.0);
-	glTexCoord2f(0, 1); glVertex3f(1.0, 1.0, -1.0);
-	glEnd();
-
-	glBindTexture(GL_TEXTURE_2D, textureMonkey);
-	glBegin(GL_QUADS);
-	glNormal3f(0, -1.0, 0);	// -y axis
-	glTexCoord2f(0, 0); glVertex3f(-1.0, -1.0, -1.0);
-	glTexCoord2f(1, 0); glVertex3f(1.0, -1.0, -1.0);
-	glTexCoord2f(1, 1); glVertex3f(1.0, -1.0, 1.0);
-	glTexCoord2f(0, 1); glVertex3f(-1.0, -1.0, 1.0);
-	glEnd();
-
-	glBindTexture(GL_TEXTURE_2D, textureMonkey);
-	glBegin(GL_QUADS);
-	glNormal3f(0, 1.0, 0);	// y axis
-	glTexCoord2f(0, 0); glVertex3f(-1.0, 1.0, 1.0);
-	glTexCoord2f(1, 0); glVertex3f(1.0, 1.0, 1.0);
-	glTexCoord2f(1, 1); glVertex3f(1.0, 1.0, -1.0);
-	glTexCoord2f(0, 1); glVertex3f(-1.0, 1.0, -1.0);
-	glEnd();
-
-	glBindTexture(GL_TEXTURE_2D, textureMonkey);
-	glBegin(GL_QUADS);
-	glNormal3f(0, 0, 1.0);	//z axis
-	glTexCoord2f(0, 0); glVertex3f(1.0, 1.0, 1.0);
-	glTexCoord2f(1, 0); glVertex3f(-1.0, 1.0, 1.0);
-	glTexCoord2f(1, 1); glVertex3f(-1.0, -1.0, 1.0);
-	glTexCoord2f(0, 1); glVertex3f(1.0, -1.0, 1.0);
-	glEnd();
-
-	glBindTexture(GL_TEXTURE_2D, textureMonkey);
-	glBegin(GL_QUADS);
-	glNormal3f(0, 0, -1.0);	//-z축
-	glTexCoord2f(0, 0); glVertex3f(1.0, 1.0, -1.0);
-	glTexCoord2f(1, 0); glVertex3f(-1.0, 1.0, -1.0);
-	glTexCoord2f(1, 1); glVertex3f(-1.0, -1.0, -1.0);
-	glTexCoord2f(0, 1); glVertex3f(1.0, -1.0, -1.0);
-	glEnd();
-
-	draw_axis();
-}
-*/
 /* Display callback function */
 void draw()
 {
@@ -479,20 +379,28 @@ void draw()
 	{
 		gluLookAt(cam[0]+ball_pos_x, cam[1], cam[2]+ball_pos_z, center[0]+ball_pos_x, center[1], center[2]+ball_pos_z, up[0], up[1], up[2]);
 	}
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_LIGHTING);
 	draw_axis();
+	glEnable(GL_TEXTURE_2D);
+	//glEnable(GL_LIGHTING);
 	//공 구현 포수(처음 시점)가 처음 radius 즉 0,0,10 공은 0,0,0
 	if (b&&!ball_flying)
 	{
 		glPushMatrix();
 		glTranslatef(0, 4.2 - ball_speed_y, ball_speed_z);
-		glutSolidSphere(0.1, 50, 50);
+		glRotatef(Baseball_Angle, 1, 0, 0);
+		draw_baseball();
+		//glutSolidSphere(0.1, 50, 50);
 		glPopMatrix();
 	}
 	if (b && ball_flying)
 	{
 		glPushMatrix();
 		glTranslatef(ball_pos_x, ball_pos_y, ball_pos_z);
-		glutSolidSphere(0.1, 50, 50);
+		glRotatef(Baseball_Angle, 1, 0, 0);
+		draw_baseball();
+		//glutSolidSphere(0.1, 50, 50);
 		glPopMatrix();
 	}
 
@@ -507,8 +415,10 @@ void draw()
 	{
 		glRotatef(-90, 1, 0, 0);
 	}
-	glColor3f(1, 0, 0);
-	gluCylinder(qobj, 0.12, 0.12, 1.6, 16, 4);
+	glColor3f(1, 1, 1);
+	draw_obj_with_texture(baseball_bat);
+	//draw_obj(baseball_bat);
+	//gluCylinder(qobj, 0.12, 0.12, 1.6, 16, 4);
 	glPopMatrix();
 	/*
 	glDisable(GL_LIGHT1);
@@ -516,22 +426,6 @@ void draw()
 	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 	*/
 
-	/*
-	glDisable(GL_TEXTURE_2D);
-	glDisable(GL_LIGHTING);
-	draw_axis();
-	glEnable(GL_TEXTURE_2D);
-	glEnable(GL_LIGHTING);
-	*/
-
-	/*
-	glColor3f(1.f, 1.f, 1.f);
-	//glutWireSphere(2, 50, 50);
-	draw_obj_with_texture(monkey);
-	//draw_obj(monkey);
-	//draw_cube_textures();
-	//draw_textureCube();
-	*/
 
 	glutSwapBuffers();
 	glFlush();
@@ -714,6 +608,7 @@ void idle()
 		ball_speed_z = 0;
 		//printf("%f\n", y_a_2);
 	}
+	Baseball_Angle += 0.35;
 	glutPostRedisplay();
 }
 
@@ -728,12 +623,43 @@ void resize(int width, int height)
 	glMatrixMode(GL_MODELVIEW);
 }
 
-/*
+void baseball_TextureMapping()
+{
+	glGenTextures(1, baseball);
+	int imgWidth, imgHeight, channels;
+	glBindTexture(GL_TEXTURE_2D, baseball[0]);
+	uchar* img = readImageData("baseball.bmp", &imgWidth, &imgHeight, &channels);
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+}
+void bat_TextureMapping()
+{
+	int imgWidth, imgHeight, channels;
+	glBindTexture(GL_TEXTURE_2D, texture_bat);
+	uchar* img = readImageData("bat_uv_map.bmp", &imgWidth, &imgHeight, &channels);
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+}
+
+void draw_baseball()
+{
+	glColor3f(1.0, 1.0, 1.0);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glBindTexture(GL_TEXTURE_2D, baseball[0]);
+	gluSphere(qobj, 0.1, 50, 50);
+}
+
 void get_resource(const char* str)
 {
-	monkey = new ObjParser(str);
+	baseball_bat = new ObjParser(str);
 }
-*/
+
 
 
 
